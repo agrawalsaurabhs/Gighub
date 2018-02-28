@@ -1,0 +1,118 @@
+﻿@model GigHub.Controllers.GigsViewModel
+@{
+    ViewBag.Title = "Home Page";
+}
+
+    <div class="form-group">
+        <div id="searchGigs" class="input-group">
+            @Html.TextBox("SearchTerm", string.Empty, new { @class = "form-control", placeholder = "search by artist/genre/venue" })
+            <span class="input-group-addon">
+                <i class="glyphicon glyphicon-search js-search-gigs"></i>
+            </span>
+        </div>
+    </div>
+
+
+<ul class="gigs">
+    @foreach (var gig in Model.UpComingGigs)
+    {
+        <li>
+            <div class="date">
+                <div class="month">
+                    @gig.DateTime.ToString("MMM")
+                </div>
+                <div class="day">
+                    @gig.DateTime.ToString("d  ")
+                </div>
+            </div>
+            <div class="details">
+                <span class="artist">
+
+                    <a href="@Url.Action("Details", "Home", new { id = @gig.Id })">@gig.Artist.Name</a>
+
+
+
+                    @if (gig.IsCancelled)
+                    {
+                        <span class="label label-warning">Cancelled</span>
+                    }
+
+                    @if (User.Identity.IsAuthenticated)
+                    {
+                        <button class="btn btn-link btn-sm pull-right js-toggle-follow" data-followee-id="@gig.ArtistId">Follow?</button>
+                    }
+                </span>
+                <span class="genre">
+                    @gig.Genre.Name
+                    @if (User.Identity.IsAuthenticated && !gig.IsCancelled)
+                    {
+                        <button class="btn @(Model.Attendances.Contains(gig.Id) ? "btn-info" : "btn-default" )
+                                 btn-sm pull-right js-toggle-attendance" 
+                                data-gig-id="@gig.Id">Going?</button>
+                    }
+                </span>
+            </div>
+        </li>
+    }
+</ul>
+
+@section scripts
+{
+    <script>
+        $(function () {
+            $(".js-toggle-attendance").click(function (e) {
+                var goingbutton = $(e.target);
+                if (goingbutton.hasClass("btn-default")) {
+                    $.post("/api/attendances", { "GigId": goingbutton.data("gig-id") })
+               .done(function () {
+                   goingbutton
+                       .removeClass("btn-default")
+                       .addClass("btn-info")
+                       .text("going");
+               }).fail(function () {
+                   alert("something failed");
+               });
+                } else {
+
+                    $.ajax({
+                        url: '/api/attendances',
+                        data:{ "GigId": goingbutton.data("gig-id") },
+                        type: 'DELETE'
+                    }).done(function () {
+                        goingbutton
+                            .removeClass("btn-info")
+                            .addClass("btn-default")
+                            .text("going?");
+                    }).fail(function () {
+                        alert("something failed");
+                    });
+                }
+               
+            });
+
+            $(".js-toggle-follow").click(function (e) {
+                var goingbutton = $(e.target);
+                $.post("/api/Followings", { "FolloweeeId": goingbutton.data("followee-id") })
+                .done(function () {
+                    goingbutton
+                        .removeClass("btn-default")
+                        .addClass("btn-info")
+                        .text("followed");
+                }).fail(function () {
+                    alert("something failed");
+                });
+            });
+
+            $(".js-search-gigs").click(function (e) {
+                var searchterm = $("#SearchTerm").val();
+                $.post("/Gigs/Search", { "searchterm": searchterm })
+                .done(function (response) {
+                    var gigshtml = $(response).find(".gigs");
+                    $('.gigs').html(gigshtml);
+                    }).fail(function () {
+                    alert("something failed");
+                });
+            });
+        });
+    </script>
+}

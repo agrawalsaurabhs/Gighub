@@ -1,0 +1,10 @@
+﻿@model System.Collections.Generic.List<GigHub.Models.Following>
+
+<div>
+    <ul>
+        @foreach (var followee in Model)
+        {
+            <li>@followee.Followee.Name</li>
+        }
+    </ul>
+</div>
